@@ -1,0 +1,36 @@
+name: Update Tennis Matches
+
+on:
+  schedule:
+    # Runs at 00:00 UTC and 12:00 UTC every day
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Run Scraper
+        working-directory: ./backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          TOURNAMENT_URLS_JSON: ${{ secrets.TOURNAMENT_URLS_JSON }}
+        run: |
+          # The scraper handles both tournaments if we call it twice or use our script
+          python3 scrape_tennis.py australian_open
+          python3 scrape_tennis.py australian_open_wta

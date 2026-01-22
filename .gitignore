@@ -1,0 +1,14 @@
+# Deployment files (don't push to public repo)
+DEPLOY.md
+
+# Scripts (except start.sh)
+update_db.sh
+rebuild_db.sh
+
+# Temporary/test files
+check_*.py
+*.db-journal
+
+# OS
+.DS_Store
+Thumbs.db
