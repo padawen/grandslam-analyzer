@@ -31,11 +31,14 @@ except ImportError:
 import os
 urls_json = os.environ.get("TOURNAMENT_URLS_JSON")
 if urls_json:
+    print(f"DEBUG: TOURNAMENT_URLS_JSON found (length: {len(urls_json)})")
     try:
         import json
         TOURNAMENT_URLS.update(json.loads(urls_json))
     except Exception as e:
         print(f"Error parsing TOURNAMENT_URLS_JSON: {e}")
+else:
+    print("DEBUG: TOURNAMENT_URLS_JSON NOT found in environment.")
 
 if not TOURNAMENT_URLS:
     print("Error: No tournament URLs found. Please set TOURNAMENT_URLS_JSON secret or create local config.py.")
