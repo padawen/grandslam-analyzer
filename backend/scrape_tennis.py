@@ -31,14 +31,11 @@ except ImportError:
 import os
 urls_json = os.environ.get("TOURNAMENT_URLS_JSON")
 if urls_json:
-    print(f"DEBUG: TOURNAMENT_URLS_JSON found (length: {len(urls_json)})")
     try:
         import json
         TOURNAMENT_URLS.update(json.loads(urls_json))
     except Exception as e:
         print(f"Error parsing TOURNAMENT_URLS_JSON: {e}")
-else:
-    print("DEBUG: TOURNAMENT_URLS_JSON NOT found in environment.")
 
 if not TOURNAMENT_URLS:
     print("Error: No tournament URLs found. Please set TOURNAMENT_URLS_JSON secret or create local config.py.")
@@ -497,8 +494,15 @@ def scrape_tournament(tournament_key):
             "matches": matches
         }
         
+        class DateTimeEncoder(json.JSONEncoder):
+            def default(self, obj):
+                from datetime import datetime
+                if isinstance(obj, datetime):
+                    return obj.isoformat()
+                return super().default(obj)
+        
         with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(output_data, f, ensure_ascii=False, indent=2)
+            json.dump(output_data, f, ensure_ascii=False, indent=2, cls=DateTimeEncoder)
         
         print("\n" + "="*60)
         print(f"SCRAPING COMPLETE - {tournament_key}")
@@ -700,25 +704,45 @@ def save_to_db(data):
         if not res: return False
         t_id = res[0]['id']
         
-        for r_name, matches in data['rounds'].items():
+        # Group matches by round for processing
+        matches_by_round = {}
+        for m in data.get('matches', []):
+            r_name = m.get('round', 'Unknown')
+            if r_name not in matches_by_round:
+                matches_by_round[r_name] = []
+            matches_by_round[r_name].append(m)
+
+        for r_name, round_matches in matches_by_round.items():
             # Round
             r_url = f"{os.environ.get('SUPABASE_URL')}/rest/v1/rounds?on_conflict=tournament_id,name"
             r_data = {"tournament_id": t_id, "name": r_name}
             res_r = requests.post(r_url, headers=headers, json=r_data).json()
-            if not res_r: continue
+            if not res_r or len(res_r) == 0: continue
             r_id = res_r[0]['id']
             
             match_payloads = []
-            for m in matches:
+            for m in round_matches:
+                # Helper to format match_time robustly
+                m_time = m.get('matchTime')
+                if m_time and hasattr(m_time, 'isoformat'):
+                    m_time = m_time.isoformat()
+                
+                # Winner logic based on extraction keys
+                winner = None
+                if m.get('underdogWon'):
+                    winner = m.get('underdog')
+                elif m.get('favoriteWon'):
+                    winner = m.get('favorite')
+                
                 match_payloads.append({
                     "round_id": r_id,
                     "player_a": m['playerA'],
                     "player_b": m['playerB'],
                     "odds_a": m['oddsA'],
                     "odds_b": m['oddsB'],
-                    "winner": m['playerA'] if m['winner'] == 'A' else (m['playerB'] if m['winner'] == 'B' else None),
+                    "winner": winner,
                     "status": "finished",
-                    "match_time": m.get('matchTime').isoformat() if m.get('matchTime') else None,
+                    "match_time": m_time,
                     "match_url": m['id'],
                     "external_id": m['id']
                 })
@@ -806,6 +830,11 @@ def save_to_db(data):
             elif m.get('favoriteWon'):
                 winner_code = 'player_a' if m['favorite'] == m['playerA'] else 'player_b'
             
+            # Robust match_time handling
+            m_time = m.get('matchTime')
+            if m_time and hasattr(m_time, 'isoformat'):
+                m_time = m_time.isoformat()
+
             # Insert Match
             if IS_SQLITE:
                 cur.execute("""
@@ -827,7 +856,7 @@ def save_to_db(data):
                 m['playerA'], m['playerB'], 
                 m['oddsA'], m['oddsB'], 
                 winner_code,
-                m.get('matchTime').isoformat() if m.get('matchTime') else None,
+                m_time,
                 m['id'],  # match_url
                 m['id']   # external_id
             ))
@@ -851,7 +880,7 @@ def save_to_db(data):
                     m['playerA'], m['playerB'], 
                     m['oddsA'], m['oddsB'], 
                     winner_code,
-                    m.get('matchTime').isoformat() if m.get('matchTime') else None,
+                    m_time,
                     m['id'],  # match_url
                     m['id']   # external_id
                 ))
