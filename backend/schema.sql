@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS tournaments (
     year INTEGER NOT NULL,
     surface VARCHAR(50),
     division VARCHAR(10) DEFAULT 'ATP', -- 'ATP' or 'WTA'
+    external_id VARCHAR(100) UNIQUE, -- ID from the scraper (tournament key)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(name, year, division)
 );
@@ -32,7 +33,7 @@ CREATE TABLE IF NOT EXISTS matches (
     odds_a NUMERIC(5, 2), -- e.g., 1.55
     odds_b NUMERIC(5, 2),
     
-    winner VARCHAR(10), -- 'player_a', 'player_b', or NULL
+    winner VARCHAR(100), -- Winner player name or NULL if not finished
     status VARCHAR(20) DEFAULT 'scheduled', -- 'scheduled', 'finished', 'live'
     
     match_time TIMESTAMP, -- When the match was played

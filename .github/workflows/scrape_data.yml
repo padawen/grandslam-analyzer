@@ -31,6 +31,5 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           TOURNAMENT_URLS_JSON: ${{ secrets.TOURNAMENT_URLS_JSON }}
         run: |
-          # The scraper handles both tournaments if we call it twice or use our script
-          python3 scrape_tennis.py australian_open
-          python3 scrape_tennis.py australian_open_wta
+          python3 -m scraper.run australian_open
+          python3 -m scraper.run australian_open_wta

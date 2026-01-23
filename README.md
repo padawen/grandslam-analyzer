@@ -1,44 +1,41 @@
-# 🎾 Grand Slam Analyzer
+# Grand Slam Analyzer
 
-Analyze tennis Grand Slam betting strategies with real match data and interactive visualizations.
+A tennis betting analytics tool that scrapes match data from eredmenyek.com and calculates ROI for underdog betting strategies.
 
-## 🚀 Quick Start
+## Project Structure
 
-```bash
-# Start both backend and frontend
-bash start.sh
-
-# Or update the database with latest matches
-bash update_db.sh
+```
+grandslam-analyzer/
+├── frontend/          # Vue.js dashboard
+├── backend/           # Python scraper + FastAPI
+└── .github/workflows/ # Automated scraping via GitHub Actions
 ```
 
-## 📁 Project Structure
+## Live Demo
 
-- **`backend/`** - FastAPI server with web scraper
-- **`frontend/`** - Vue 3 + Vite dashboard
-- **`DEPLOY.md`** - Deployment guide (free tiers)
-- **`SECURITY.md`** - Security review and recommendations
+- **Frontend**: Deployed on Vercel
+- **Database**: Supabase (PostgreSQL)
+- **Scraper**: Runs automatically via GitHub Actions (2x daily)
 
-## 🔧 Setup
+## Local Development
 
-See individual README files in `backend/` and `frontend/` directories for detailed setup instructions.
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## 📊 Features
+### Backend API
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
+```
 
-- Real-time match data scraping from eredmenyek.com
-- Underdog vs Favorite strategy comparison
-- Interactive balance charts with match-by-match breakdown
-- Support for both ATP and WTA divisions
-- Automatic database updates via GitHub Actions
+## Environment Variables
 
-## 🔐 Security
-
-- API key authentication
-- Rate limiting (60 req/min per IP)
-- CORS protection
-- Environment-based configuration
-
-## 📝 License
-
-MIT
-# Trigger Actions
+Set in GitHub Secrets for automated scraping:
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_KEY` - Supabase anon/service key
+- `TOURNAMENT_URLS_JSON` - JSON with tournament URLs
