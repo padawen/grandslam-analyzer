@@ -490,9 +490,9 @@ def scrape_tournament(tournament_key):
         skipped = 0
         already_in_db = 0
         
-        # Get existing IDs to avoid re-scraping
-        existing_ids = get_existing_external_ids()
-        print(f"  Found {len(existing_ids)} matches already in database.")
+        # Get existing IDs from Supabase to skip already processed matches
+        existing_ids = get_existing_match_ids_from_supabase()
+
         
         for i, match_url in enumerate(match_links, 1):
             if match_url in existing_ids:
@@ -553,128 +553,37 @@ def scrape_tournament(tournament_key):
             except:
                 pass
 
-
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import sqlite3
-
-IS_SQLITE = False
-
-def get_db_connection():
-    """Connect to the database using DATABASE_URL or fallback to SQLite"""
-    global IS_SQLITE
-    database_url = os.environ.get('DATABASE_URL')
-    
-    if database_url:
-        IS_SQLITE = False
-        try:
-            conn = psycopg2.connect(database_url)
-            return conn
-        except Exception as e:
-            print(f"Error connecting to Postgres: {e}")
-            return None
-    else:
-        IS_SQLITE = True
-        # Use absolute path to grandslam.db relative to this script
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        db_path = os.path.join(base_dir, 'grandslam.db')
-        print(f"DATABASE_URL not set. Using local SQLite: {db_path}")
-        try:
-            conn = sqlite3.connect(db_path)
-            # Enable FK support
-            conn.execute("PRAGMA foreign_keys = ON")
-            _init_sqlite_schema(conn)
-            return conn
-        except Exception as e:
-            print(f"Error connecting to SQLite: {e}")
-            return None
-
-def get_existing_external_ids():
-    """Fetch all external_ids from the matches table"""
-    conn = get_db_connection()
-    if conn == "REST":
-        # For Supabase REST, we could fetch IDs but it complicates things.
-        # Let's return empty set and let UPSERT handle it.
-        return set()
-    try:
-        cur = conn.cursor()
-        cur.execute("SELECT external_id FROM matches WHERE external_id IS NOT NULL")
-        ids = {row[0] for row in cur.fetchall()}
-        return ids
-    except Exception as e:
-        print(f"Error fetching existing IDs: {e}")
-        return set()
-    finally:
-        conn.close()
-
-def _init_sqlite_schema(conn):
-    """Initialize schema for SQLite if not exists"""
-    if conn == "REST": return
-    c = conn.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS tournaments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        year INTEGER NOT NULL,
-        surface TEXT,
-        division TEXT DEFAULT 'ATP',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(name, year, division)
-    )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS rounds (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tournament_id INTEGER REFERENCES tournaments(id) ON DELETE CASCADE,
-        name TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(tournament_id, name)
-    )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS matches (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        round_id INTEGER REFERENCES rounds(id) ON DELETE CASCADE,
-        player_a TEXT NOT NULL,
-        player_b TEXT NOT NULL,
-        odds_a REAL,
-        odds_b REAL,
-        winner TEXT,
-        status TEXT DEFAULT 'scheduled',
-        match_time TIMESTAMP,
-        match_url TEXT,
-        external_id TEXT UNIQUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )""")
-    
-    # Create indexes
-    c.execute("CREATE INDEX IF NOT EXISTS idx_matches_round_id ON matches(round_id)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_matches_match_time ON matches(match_time)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_rounds_tournament_id ON rounds(tournament_id)")
-    c.execute("CREATE INDEX IF NOT EXISTS idx_tournaments_year_division ON tournaments(year, division)")
-    
-    conn.commit()
-
-def execute_sql(cursor, query, params):
-    """Execute SQL handling param style differences"""
-    if IS_SQLITE:
-        # PostgreSQL uses %s, SQLite uses ?
-        # Simple replacement assuming no %s in actual data strings (safe for this query structure)
-        q = query.replace('%s', '?')
-        # SQLite doesn't support RETURNING in older versions, but Python's sqlite3 might.
-        # Check if query has RETURNING. If so, we handle it differently.
-        if "RETURNING id" in q:
-            q = q.replace("RETURNING id", "")
-            cursor.execute(q, params)
-            return cursor.lastrowid
-        
-        cursor.execute(q, params)
-        return None
-    else:
-        cursor.execute(query, params)
-        if "RETURNING id" in query:
-             return cursor.fetchone()[0]
-        return None
-
 import requests
+
+def get_existing_match_ids_from_supabase():
+    """Fetch all external_ids from the matches table in Supabase to skip already processed matches"""
+    supabase_url = os.environ.get("SUPABASE_URL")
+    supabase_key = os.environ.get("SUPABASE_KEY")
+    
+    if not supabase_url or not supabase_key:
+        print("Supabase not configured, cannot fetch existing IDs.")
+        return set()
+    
+    url = f"{supabase_url}/rest/v1/matches?select=external_id"
+    headers = {
+        "apikey": supabase_key,
+        "Authorization": f"Bearer {supabase_key}",
+    }
+    
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            ids = {item['external_id'] for item in data if item.get('external_id')}
+            print(f"  Found {len(ids)} matches already in Supabase (will be skipped).")
+            return ids
+        else:
+            print(f"  Warning: Could not fetch existing IDs from Supabase: {response.text}")
+            return set()
+    except Exception as e:
+        print(f"  Error fetching existing IDs from Supabase: {e}")
+        return set()
 
 def save_to_supabase(table, data, on_conflict="id"):
     """Helper to save to Supabase via REST API"""
@@ -686,8 +595,6 @@ def save_to_supabase(table, data, on_conflict="id"):
         "Prefer": f"resolution=merge-duplicates,return=representation"
     }
     try:
-        # If it's a list, it's multiple inserts
-        # Handle single vs multiple inserts would be better here
         r = requests.post(url, headers=headers, json=data)
         if r.status_code not in [200, 201]:
             print(f"Supabase error ({table}): {r.text}")
@@ -725,9 +632,17 @@ def save_to_db(data):
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=representation"
         }
-        res = requests.post(url, headers=headers, json=t_data).json()
-        if not res: return False
-        t_id = res[0]['id']
+        
+        try:
+            response = requests.post(url, headers=headers, json=t_data)
+            res = response.json()
+            if not res or not isinstance(res, list) or len(res) == 0:
+                print(f"Supabase tournament upsert failed. Response: {response.text}")
+                return False
+            t_id = res[0]['id']
+        except Exception as e:
+            print(f"Error upserting tournament to Supabase: {e}")
+            return False
         
         # Group matches by round for processing
         matches_by_round = {}
@@ -777,152 +692,11 @@ def save_to_db(data):
                 requests.post(m_url, headers=headers, json=match_payloads)
         
         print(f"Successfully saved {data['tournament']} to Supabase.")
-        # We also keep local SQLite for backup
-    
-    conn = get_db_connection()
-    if not conn:
-        return True # Already saved to Supabase
-        
-    try:
-        cur = conn.cursor()
-        
-        # 1. Upsert Tournament
-        t_key = data['tournament_key']
-        t_name = data['tournament']
-        t_year = 2026 
-        t_surface = data.get('surface', 'Unknown')
-        
-        # Extract division from tournament key
-        t_division = 'WTA' if '_wta' in t_key.lower() else 'ATP'
-        
-        print(f"Saving Tournament: {t_name} ({t_year}) - {t_surface} - {t_division}")
-        
-        # SQLite doesn't strictly support ON CONFLICT DO UPDATE in older versions the same way for all clauses,
-        # but modern sqlite (3.24+) does support UPSERT syntax similar to Postgres.
-        # Assuming modern sqlite.
-        
-        if IS_SQLITE:
-             # SQLite Upsert
-             cur.execute("""
-                INSERT INTO tournaments (name, year, surface, division)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(name, year, division) DO UPDATE SET surface=excluded.surface
-             """, (t_name, t_year, t_surface, t_division))
-             
-             # Get ID
-             cur.execute("SELECT id FROM tournaments WHERE name=? AND year=? AND division=?", (t_name, t_year, t_division))
-             tournament_id = cur.fetchone()[0]
-        else:
-             # Postgres Upsert
-             cur.execute("""
-                INSERT INTO tournaments (name, year, surface, division)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (name, year, division) 
-                DO UPDATE SET surface = EXCLUDED.surface
-                RETURNING id;
-            """, (t_name, t_year, t_surface, t_division))
-             tournament_id = cur.fetchone()[0]
-        
-        # 2. Iterate Matches
-        match_count = 0
-        for m in data['matches']:
-            round_name = m['round']
-            
-            # Upsert Round
-            if IS_SQLITE:
-                cur.execute("""
-                    INSERT INTO rounds (tournament_id, name)
-                    VALUES (?, ?)
-                    ON CONFLICT(tournament_id, name) DO NOTHING
-                """, (tournament_id, round_name))
-                cur.execute("SELECT id FROM rounds WHERE tournament_id=? AND name=?", (tournament_id, round_name))
-                round_id = cur.fetchone()[0]
-            else:
-                cur.execute("""
-                    INSERT INTO rounds (tournament_id, name)
-                    VALUES (%s, %s)
-                    ON CONFLICT (tournament_id, name) DO NOTHING;
-                """, (tournament_id, round_name))
-                cur.execute("""
-                    SELECT id FROM rounds WHERE tournament_id = %s AND name = %s
-                """, (tournament_id, round_name))
-                round_id = cur.fetchone()[0]
-            
-            # Helper for winner
-            winner_code = None
-            if m.get('underdogWon'):
-                winner_code = 'player_a' if m['underdog'] == m['playerA'] else 'player_b'
-            elif m.get('favoriteWon'):
-                winner_code = 'player_a' if m['favorite'] == m['playerA'] else 'player_b'
-            
-            # Robust match_time handling
-            m_time = m.get('matchTime')
-            if m_time and hasattr(m_time, 'isoformat'):
-                m_time = m_time.isoformat()
-
-            # Insert Match
-            if IS_SQLITE:
-                cur.execute("""
-                INSERT INTO matches (
-                    round_id, player_a, player_b, odds_a, odds_b, winner, status, match_time, match_url, external_id
-                )
-                VALUES (?, ?, ?, ?, ?, ?, 'finished', ?, ?, ?)
-                ON CONFLICT (external_id) 
-                DO UPDATE SET 
-                    odds_a = excluded.odds_a,
-                    odds_b = excluded.odds_b,
-                    winner = excluded.winner,
-                    status = 'finished',
-                    match_time = excluded.match_time,
-                    match_url = excluded.match_url,
-                    updated_at = CURRENT_TIMESTAMP
-            """, (
-                round_id, 
-                m['playerA'], m['playerB'], 
-                m['oddsA'], m['oddsB'], 
-                winner_code,
-                m_time,
-                m['id'],  # match_url
-                m['id']   # external_id
-            ))
-            else:
-                 cur.execute("""
-                    INSERT INTO matches (
-                        round_id, player_a, player_b, odds_a, odds_b, winner, status, match_time, match_url, external_id
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, 'finished', %s, %s, %s)
-                    ON CONFLICT (external_id) 
-                    DO UPDATE SET 
-                        odds_a = EXCLUDED.odds_a,
-                        odds_b = EXCLUDED.odds_b,
-                        winner = EXCLUDED.winner,
-                        status = 'finished',
-                        match_time = EXCLUDED.match_time,
-                        match_url = EXCLUDED.match_url,
-                        updated_at = NOW();
-                """, (
-                    round_id, 
-                    m['playerA'], m['playerB'], 
-                    m['oddsA'], m['oddsB'], 
-                    winner_code,
-                    m_time,
-                    m['id'],  # match_url
-                    m['id']   # external_id
-                ))
-            
-            match_count += 1
-            
-        conn.commit()
-        print(f"Saved {match_count} matches to Database.")
         return True
-        
-    except Exception as e:
-        conn.rollback()
-        print(f"Error saving to DB: {e}")
-        return False
-    finally:
-        cur.close()
-        conn.close()
+    
+    # If Supabase is not configured, fail
+    print("Error: SUPABASE_URL and SUPABASE_KEY environment variables must be set.")
+    return False
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
