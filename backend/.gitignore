@@ -5,7 +5,8 @@ __pycache__/
 venv/
 .env
 !.env.example
-config.py
+/config.py
+!scraper/config.py
 
 # Node.js
 node_modules/
