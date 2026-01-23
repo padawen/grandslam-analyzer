@@ -217,36 +217,61 @@ def get_match_links(driver, base_url):
 
 
 def extract_match_data(driver, match_url):
-    """Extract match data from individual match page"""
-    try:
-        driver.get(match_url)
-        
-        # Wait for player names
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".participant__participantNameWrapper"))
-        )
-        
-        # Extract player names
-        player_elements = driver.find_elements(By.CSS_SELECTOR, ".participant__participantNameWrapper")
-        if len(player_elements) < 2:
-            print(f"  Warning: Less than 2 players found at {match_url}")
-            return None
-        
-        player_a = player_elements[0].text.strip()
-        player_b = player_elements[1].text.strip()
-        
-        # Check for Walkover based on player names
-        is_walkover = False
-        winner_index = -1 # 0 for Player A, 1 for Player B
-        
-        if "Továbbjutó" in player_a:
-            is_walkover = True
-            winner_index = 0
-            player_a = player_a.replace("Továbbjutó", "").strip(" -()")
-        elif "Továbbjutó" in player_b:
-            is_walkover = True
-            winner_index = 1
-            player_b = player_b.replace("Továbbjutó", "").strip(" -()")
+    """Extract match data from individual match page with retries for stability"""
+    from selenium.common.exceptions import StaleElementReferenceException
+    import time
+
+    for attempt in range(2): # Try twice
+        try:
+            driver.get(match_url)
+            
+            # Additional wait for stability on very dynamic pages
+            time.sleep(1)
+            
+            # Wait for player names
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".participant__participantNameWrapper"))
+            )
+            
+            # Extract player names - re-find elements to avoid stale references
+            player_elements = WebDriverWait(driver, 5).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".participant__participantNameWrapper"))
+            )
+            
+            if len(player_elements) < 2:
+                print(f"  Warning: Less than 2 players found at {match_url}")
+                return None
+            
+            player_a = player_elements[0].text.strip()
+            player_b = player_elements[1].text.strip()
+            
+            # Check for Walkover based on player names
+            is_walkover = False
+            winner_index = -1 # 0 for Player A, 1 for Player B
+            
+            if "Továbbjutó" in player_a:
+                is_walkover = True
+                winner_index = 0
+                player_a = player_a.replace("Továbbjutó", "").strip(" -()")
+            elif "Továbbjutó" in player_b:
+                is_walkover = True
+                winner_index = 1
+                player_b = player_b.replace("Továbbjutó", "").strip(" -()")
+            
+            # Success - break retry loop
+            break
+        except StaleElementReferenceException:
+            if attempt == 0:
+                print(f"  Stale element detected, retrying {match_url}...")
+                continue
+            else:
+                raise
+        except Exception as e:
+            if attempt == 0:
+                print(f"  Error on attempt 1 for {match_url}, retrying...")
+                continue
+            else:
+                raise e
             
         # Extract round information from breadcrumb
         round_name = "Unknown"
