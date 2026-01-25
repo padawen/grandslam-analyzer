@@ -60,7 +60,10 @@
                                 </div>
                             </td>
                             <td class="text-center py-3 px-3">
-                                <span v-if="match.underdogWon" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-600/20 text-purple-400 border border-purple-500/30">
+                                <span v-if="match.oddsA === 1.0 && match.oddsB === 1.0" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-600/20 text-gray-400 border border-gray-500/30">
+                                    Walkover
+                                </span>
+                                <span v-else-if="match.underdogWon" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-600/20 text-purple-400 border border-purple-500/30">
                                     Underdog
                                 </span>
                                 <span v-else-if="match.winner" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-blue-600/20 text-blue-400 border border-blue-500/30">
