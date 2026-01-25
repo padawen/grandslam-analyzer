@@ -91,8 +91,9 @@ const isExpanded = ref(false);
 function getPlayerColor(match, player) {
     if (!match.winner) return 'text-gray-300';
     
-    const isWinner = (player === 'player_a' && match.winner === 'player_a') || 
-                     (player === 'player_b' && match.winner === 'player_b');
+    const winnerName = match.winner.trim();
+    const playerName = player === 'player_a' ? match.player_a.trim() : match.player_b.trim();
+    const isWinner = winnerName === playerName;
     
     return isWinner ? 'text-green-400' : 'text-red-400';
 }
