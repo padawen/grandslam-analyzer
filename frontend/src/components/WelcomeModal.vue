@@ -1,6 +1,6 @@
 <template>
-    <div v-if="show" class="fixed inset-0 bg-black/90 flex items-center justify-center backdrop-blur-sm z-[60]">
-        <div class="bg-[#2a2a2a] border border-gray-700/50 p-6 md:p-8 rounded-2xl max-w-lg w-full mx-4 shadow-2xl relative animate-slide-up">
+    <div v-if="show" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[60]">
+        <div class="bg-[#2a2a2a] border border-gray-700/50 p-6 md:p-8 rounded-2xl max-w-lg w-full mx-4 shadow-2xl relative">
             <button @click="emit('close')" class="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
