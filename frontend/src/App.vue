@@ -251,6 +251,9 @@ function calculateStrategy(matches, stakeAmt, type) {
             won = !match.underdogWon;
         }
         
+        // Skip walkover matches (odds = 1.0) - stake returned, no profit/loss
+        if (betOdds === 1.0) return;
+        
         if (won) {
             wins++;
             totalProfit += (betOdds * stakeAmt) - stakeAmt;

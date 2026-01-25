@@ -38,15 +38,24 @@ CREATE TABLE IF NOT EXISTS matches (
     
     match_time TIMESTAMP, -- When the match was played
     match_url TEXT, -- Full URL to the match page
-    external_id VARCHAR(100) UNIQUE, -- ID from the scraper (URL or ID)
+    external_id TEXT UNIQUE, -- ID from the scraper (URL or ID)
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_matches_round_id ON matches(round_id);
 CREATE INDEX IF NOT EXISTS idx_matches_match_time ON matches(match_time);
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 CREATE INDEX IF NOT EXISTS idx_rounds_tournament_id ON rounds(tournament_id);
 CREATE INDEX IF NOT EXISTS idx_tournaments_year_division ON tournaments(year, division);
+
+-- Enable Row Level Security
+ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rounds ENABLE ROW LEVEL SECURITY;
+ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
+
+-- Policies: Allow public read access
+CREATE POLICY "Allow public read access" ON tournaments FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON rounds FOR SELECT USING (true);
+CREATE POLICY "Allow public read access" ON matches FOR SELECT USING (true);
