@@ -2,7 +2,7 @@ name: Update Tennis Matches
 
 on:
   schedule:
-    # Runs at 00:00 UTC and 12:00 UTC every day
+    # Runs twice daily at 00:00 UTC and 12:00 UTC
     - cron: '0 0,12 * * *'
   workflow_dispatch: # Allows manual trigger
 
@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Log execution time
+        run: echo "Workflow started at $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 
       - name: Set up Python
         uses: actions/setup-python@v5
