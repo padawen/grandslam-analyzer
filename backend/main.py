@@ -55,6 +55,7 @@ class Match(BaseModel):
     winner: Optional[str]
     status: str
     match_time: Optional[str]
+    updated_at: Optional[str]
     surface: Optional[str]
 
 async def supabase_request(method: str, endpoint: str, params: dict = None):
@@ -103,6 +104,7 @@ async def get_matches(
     
     try:
         data = await supabase_request("GET", "matches", params)
+        print("DEBUG DATA[0]:", data[0] if data else "No data")
         
         if not data:
             return []
