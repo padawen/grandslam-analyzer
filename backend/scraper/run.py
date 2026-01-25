@@ -1,7 +1,5 @@
 """Main scraper orchestrator - entry point for scraping tournaments."""
-import os
 import sys
-import json
 
 from .config import TOURNAMENT_URLS
 from .driver import setup_driver
@@ -10,29 +8,14 @@ from .extractor import extract_match_data
 from .database import get_existing_match_ids_from_supabase, save_to_db
 
 
-class DateTimeEncoder(json.JSONEncoder):
-    """JSON encoder that handles datetime objects."""
-    def default(self, obj):
-        from datetime import datetime
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-
 def scrape_tournament(tournament_key):
-    """Scrape matches for a specific tournament."""
+    """Scrape matches for a specific tournament and upload directly to Supabase."""
     if tournament_key not in TOURNAMENT_URLS:
         print(f"Error: Tournament '{tournament_key}' not supported.")
         print(f"Available: {list(TOURNAMENT_URLS.keys())}")
         return False
     
     base_url = TOURNAMENT_URLS[tournament_key]
-    
-    # Ensure data directory exists
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    
-    output_file = f"data/matches_{tournament_key}.json"
     driver = None
     
     try:
@@ -77,30 +60,32 @@ def scrape_tournament(tournament_key):
                 skipped += 1
                 print(f"  ✗ Skipped (no odds/walkover)")
         
-        # Save to JSON
-        output_data = {
-            "tournament_key": tournament_key,
-            "tournament": f"{tournament_key.replace('_', ' ').title()}",
-            "surface": surface,
-            "matches": matches
-        }
-        
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(output_data, f, ensure_ascii=False, indent=2, cls=DateTimeEncoder)
-        
         print(f"\n{'='*60}")
         print(f"SCRAPING COMPLETE - {tournament_key}")
         print(f"Total processed: {len(match_links)}")
         print(f"Already in DB: {already_in_db} (skipped)")
         print(f"Newly scraped: {successful}")
         print(f"Skipped (error): {skipped}")
-        print(f"Data saved to: {output_file}")
         print(f"{'='*60}\n")
         
-        return True
+        # Upload directly to Supabase
+        if matches:
+            data = {
+                "tournament_key": tournament_key,
+                "tournament": f"{tournament_key.replace('_', ' ').title()}",
+                "surface": surface,
+                "matches": matches
+            }
+            print("Uploading to Supabase...")
+            return save_to_db(data)
+        else:
+            print("No new matches to upload.")
+            return True
         
     except Exception as e:
         print(f"\nUnexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return False
     finally:
         if driver:
@@ -113,21 +98,12 @@ def scrape_tournament(tournament_key):
 def main():
     """CLI entry point."""
     if len(sys.argv) < 2:
-        print("Usage: python -m scraper.run <tournament_key>")
+        print("Usage: python3 -m scraper <tournament_key>")
         print(f"Available tournaments: {list(TOURNAMENT_URLS.keys())}")
         sys.exit(1)
     
     tournament_key = sys.argv[1]
     success = scrape_tournament(tournament_key)
-    
-    if success:
-        try:
-            with open(f"data/matches_{tournament_key}.json", "r") as f:
-                data = json.load(f)
-                save_to_db(data)
-        except Exception as e:
-            print(f"Failed to save to DB: {e}")
-    
     sys.exit(0 if success else 1)
 
 

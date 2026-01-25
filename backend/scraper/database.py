@@ -119,8 +119,13 @@ def save_to_db(data):
             })
         
         if match_payloads:
+            print(f"  Uploading {len(match_payloads)} matches for round '{r_name}'...")
             m_url = f"{supabase_url}/rest/v1/matches?on_conflict=external_id"
-            requests.post(m_url, headers=headers, json=match_payloads)
+            m_res = requests.post(m_url, headers=headers, json=match_payloads)
+            if m_res.status_code not in [200, 201]:
+                print(f"  Warning: Failed to upload matches for round '{r_name}': {m_res.text}")
+            else:
+                print(f"  ✓ Uploaded {len(match_payloads)} matches.")
     
     print(f"Successfully saved {data['tournament']} to Supabase.")
     return True

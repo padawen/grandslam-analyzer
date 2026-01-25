@@ -1,6 +1,6 @@
 # Backend
 
-Python backend with scraper and FastAPI.
+Python scraper with modular architecture. Scrapes tennis match data and uploads directly to Supabase.
 
 ## Structure
 
@@ -17,17 +17,9 @@ backend/
 └── schema.sql         # Database schema
 ```
 
-## Running the Scraper
+## Running the Scraper (GitHub Actions)
 
-```bash
-# Set environment variables
-export SUPABASE_URL="your-url"
-export SUPABASE_KEY="your-key"
-export TOURNAMENT_URLS_JSON='{"australian_open": "https://..."}'
-
-# Run scraper
-python -m scraper.run australian_open
-```
+The scraper runs automatically via GitHub Actions (2x daily). It uploads directly to Supabase without creating local files.
 
 ## Running the API
 

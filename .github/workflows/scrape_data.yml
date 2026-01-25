@@ -31,5 +31,5 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           TOURNAMENT_URLS_JSON: ${{ secrets.TOURNAMENT_URLS_JSON }}
         run: |
-          python3 -m scraper.run australian_open
-          python3 -m scraper.run australian_open_wta
+          python3 -m scraper australian_open
+          python3 -m scraper australian_open_wta
