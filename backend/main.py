@@ -92,7 +92,7 @@ async def get_matches(
     """Get matches with optional filters"""
     
     # Build query
-    select_query = "id,player_a,player_b,odds_a,odds_b,winner,status,match_time,rounds!inner(name,tournaments!inner(year,division,surface))"
+    select_query = "id,player_a,player_b,odds_a,odds_b,winner,status,match_time,updated_at,rounds!inner(name,tournaments!inner(year,division,surface))"
     params = {"select": select_query, "limit": limit}
     
     # Add filters as separate query params (PostgREST nested resource syntax)
@@ -121,6 +121,7 @@ async def get_matches(
                     "winner": row.get("winner"),
                     "status": row["status"],
                     "match_time": row.get("match_time"),
+                    "updated_at": row.get("updated_at"),
                     "surface": row["rounds"]["tournaments"].get("surface") if row.get("rounds") and row["rounds"].get("tournaments") else "Unknown"
                 })
             except (KeyError, TypeError) as e:

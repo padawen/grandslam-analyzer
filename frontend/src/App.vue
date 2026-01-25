@@ -115,7 +115,16 @@ async function loadYear(year, division) {
        tournamentName.value = `Grand Slam ${year} - ${division}`;
     }
 
-    lastUpdated.value = new Date();
+    // Set lastUpdated to the most recent updated_at from matches
+    if (rawMatches.length > 0) {
+      const latestUpdate = rawMatches.reduce((latest, match) => {
+        if (!match.updated_at) return latest;
+        const matchTime = new Date(match.updated_at);
+        return !latest || matchTime > latest ? matchTime : latest;
+      }, null);
+      lastUpdated.value = latestUpdate;
+    }
+    
     loading.value = false;
     calculateAndDisplayStats();
 
@@ -147,8 +156,6 @@ function processMatches(apiMatches) {
         }
     }
 
-    // Translate round names if needed, or keep as is if backend returns English
-    // Currently backend returns Hungarian '1/64 döntő' etc. Map them?
     const roundMapping = {
         'Selejtező - 1. forduló': 'Q1',
         'Selejtező - 2. forduló': 'Q2',
