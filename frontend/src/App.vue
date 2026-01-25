@@ -125,12 +125,18 @@ function processMatches(apiMatches) {
     let isPlayerAUnderdog = oddsA > oddsB;
     const underdogOdds = isPlayerAUnderdog ? oddsA : oddsB;
     const favoriteOdds = isPlayerAUnderdog ? oddsB : oddsA;
-    let underdogWon = false;
     
-    if (m.winner === 'player_a') {
-        underdogWon = isPlayerAUnderdog; 
-    } else if (m.winner === 'player_b') {
-        underdogWon = !isPlayerAUnderdog; 
+    // Backend returns winner as player name, not 'player_a'/'player_b'
+    if (m.winner) {
+        const winnerName = m.winner.trim();
+        const playerAName = m.player_a.trim();
+        const playerBName = m.player_b.trim();
+        
+        if (winnerName === playerAName) {
+            underdogWon = isPlayerAUnderdog;
+        } else if (winnerName === playerBName) {
+            underdogWon = !isPlayerAUnderdog;
+        }
     }
 
     // Translate round names if needed, or keep as is if backend returns English
