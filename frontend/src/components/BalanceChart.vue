@@ -284,7 +284,7 @@ function renderMyChart() {
             Tip: Click on the colored circles below to toggle strategies!
         </div>
 
-        <div class="relative h-[400px] w-full">
+        <div class="relative h-[400px] w-full chart-wrapper">
             <canvas id="balanceChart"></canvas>
         </div>
     </div>
@@ -305,7 +305,34 @@ function renderMyChart() {
     display: flex;
     flex-direction: column;
 }
+
+/* Hide header and tip in fullscreen to give maximum space to chart on mobile */
+.chart-fullscreen h3, 
+.chart-fullscreen .inline-block {
+    display: none;
+}
+
+/* Show a small close button in fullscreen */
+.chart-fullscreen::after {
+    content: "Tap to Close";
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: #6b7280;
+    font-size: 12px;
+    background: rgba(0,0,0,0.5);
+    padding: 4px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.chart-fullscreen .chart-wrapper {
+    height: 100% !important;
+    flex: 1;
+}
+
 .chart-fullscreen canvas {
     height: 100% !important;
+    width: 100% !important;
 }
 </style>

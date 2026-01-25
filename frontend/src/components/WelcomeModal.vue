@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   show: {
     type: Boolean,
     required: true
@@ -45,4 +45,18 @@ defineProps({
 });
 
 const emit = defineEmits(['close']);
+
+import { watch, onUnmounted } from 'vue';
+
+watch(() => props.show, (newValue) => {
+  if (newValue) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
+
+onUnmounted(() => {
+  document.body.style.overflow = '';
+});
 </script>
