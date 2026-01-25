@@ -95,15 +95,11 @@ async def get_matches(
     select_query = "id,player_a,player_b,odds_a,odds_b,winner,status,match_time,rounds!inner(name,tournaments!inner(year,division,surface))"
     params = {"select": select_query, "limit": limit}
     
-    # Add filters
-    filters = []
+    # Add filters as separate query params (PostgREST nested resource syntax)
     if year:
-        filters.append(f"rounds.tournaments.year.eq.{year}")
+        params["rounds.tournaments.year"] = f"eq.{year}"
     if division:
-        filters.append(f"rounds.tournaments.division.eq.{division}")
-    
-    if filters:
-        params["and"] = f"({','.join(filters)})"
+        params["rounds.tournaments.division"] = f"eq.{division}"
     
     try:
         data = await supabase_request("GET", "matches", params)
