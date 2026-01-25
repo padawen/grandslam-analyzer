@@ -25,6 +25,7 @@ const loading = ref(true);
 const error = ref(null);
 const tournamentName = ref('');
 const showWelcomeModal = ref(true);
+const lastUpdated = ref(null);
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_KEY = import.meta.env.VITE_API_KEY || '';
@@ -35,6 +36,12 @@ const api = axios.create({
     'X-API-Key': API_KEY
   }
 });
+
+// --- Helpers ---
+
+function isWalkover(match) {
+  return match.oddsA === 1.0 && match.oddsB === 1.0;
+}
 
 // --- Lifecycle ---
 
@@ -108,6 +115,7 @@ async function loadYear(year, division) {
        tournamentName.value = `Grand Slam ${year} - ${division}`;
     }
 
+    lastUpdated.value = new Date();
     loading.value = false;
     calculateAndDisplayStats();
 
@@ -127,7 +135,6 @@ function processMatches(apiMatches) {
     const favoriteOdds = isPlayerAUnderdog ? oddsB : oddsA;
     let underdogWon = false;
     
-    // Backend returns winner as player name, not 'player_a'/'player_b'
     if (m.winner) {
         const winnerName = m.winner.trim();
         const playerAName = m.player_a.trim();
@@ -258,8 +265,8 @@ function calculateStrategy(matches, stakeAmt, type) {
             won = !match.underdogWon;
         }
         
-        // Skip walkover matches (odds = 1.0) - stake returned, no profit/loss
-        if (betOdds === 1.0) return;
+        // Skip walkover matches - stake returned, no profit/loss
+        if (isWalkover(match)) return;
         
         if (won) {
             wins++;
@@ -358,8 +365,11 @@ watch(stake, () => {
 
         <MatchList :matches="matchesData" />
 
-        <footer class="text-center text-sm text-gray-500 pt-12 pb-8">
+        <footer class="text-center text-sm text-gray-500 pt-12 pb-8 space-y-1">
             <p>{{ tournamentName || 'Loading data...' }}</p>
+            <p v-if="lastUpdated" class="text-xs text-gray-600">
+                Last updated: {{ lastUpdated.toLocaleString() }}
+            </p>
         </footer>
 
     </div>

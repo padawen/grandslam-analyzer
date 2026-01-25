@@ -46,7 +46,7 @@
                                         {{ match.player_a }}
                                     </span>
                                     <span class="text-gray-400 font-mono text-xs">({{ match.oddsA?.toFixed(2) || '-' }})</span>
-                                    <span v-if="match.underdog === match.player_a && !(match.oddsA === 1.0 && match.oddsB === 1.0)" class="text-xs text-purple-400">★</span>
+                                    <span v-if="match.underdog === match.player_a && !isWalkover(match)" class="text-xs text-purple-400">★</span>
                                 </div>
                             </td>
                             <td class="text-center py-3 px-2 text-gray-600">-</td>
@@ -56,11 +56,11 @@
                                         {{ match.player_b }}
                                     </span>
                                     <span class="text-gray-400 font-mono text-xs">({{ match.oddsB?.toFixed(2) || '-' }})</span>
-                                    <span v-if="match.underdog === match.player_b && !(match.oddsA === 1.0 && match.oddsB === 1.0)" class="text-xs text-purple-400">★</span>
+                                    <span v-if="match.underdog === match.player_b && !isWalkover(match)" class="text-xs text-purple-400">★</span>
                                 </div>
                             </td>
                             <td class="text-center py-3 px-3">
-                                <span v-if="match.oddsA === 1.0 && match.oddsB === 1.0" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-600/20 text-gray-400 border border-gray-500/30">
+                                <span v-if="isWalkover(match)" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gray-600/20 text-gray-400 border border-gray-500/30">
                                     Walkover
                                 </span>
                                 <span v-else-if="match.underdogWon" class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-purple-600/20 text-purple-400 border border-purple-500/30">
@@ -90,6 +90,10 @@ defineProps({
 });
 
 const isExpanded = ref(false);
+
+function isWalkover(match) {
+    return match.oddsA === 1.0 && match.oddsB === 1.0;
+}
 
 function getPlayerColor(match, player) {
     if (!match.winner) return 'text-gray-300';
