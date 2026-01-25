@@ -46,7 +46,7 @@
                                         {{ match.player_a }}
                                     </span>
                                     <span class="text-gray-400 font-mono text-xs">({{ match.oddsA?.toFixed(2) || '-' }})</span>
-                                    <span v-if="match.underdog === match.player_a" class="text-xs text-purple-400">★</span>
+                                    <span v-if="match.underdog === match.player_a && !(match.oddsA === 1.0 && match.oddsB === 1.0)" class="text-xs text-purple-400">★</span>
                                 </div>
                             </td>
                             <td class="text-center py-3 px-2 text-gray-600">-</td>
@@ -56,7 +56,7 @@
                                         {{ match.player_b }}
                                     </span>
                                     <span class="text-gray-400 font-mono text-xs">({{ match.oddsB?.toFixed(2) || '-' }})</span>
-                                    <span v-if="match.underdog === match.player_b" class="text-xs text-purple-400">★</span>
+                                    <span v-if="match.underdog === match.player_b && !(match.oddsA === 1.0 && match.oddsB === 1.0)" class="text-xs text-purple-400">★</span>
                                 </div>
                             </td>
                             <td class="text-center py-3 px-3">
