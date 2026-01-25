@@ -125,6 +125,7 @@ function processMatches(apiMatches) {
     let isPlayerAUnderdog = oddsA > oddsB;
     const underdogOdds = isPlayerAUnderdog ? oddsA : oddsB;
     const favoriteOdds = isPlayerAUnderdog ? oddsB : oddsA;
+    let underdogWon = false;
     
     // Backend returns winner as player name, not 'player_a'/'player_b'
     if (m.winner) {
