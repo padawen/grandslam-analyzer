@@ -164,7 +164,7 @@ function renderMyChart() {
             },
             plugins: {
                 legend: {
-                    position: 'top',
+                    position: props.isMobile ? 'bottom' : 'top',
                     onHover: (evt) => {
                         evt.native.target.style.cursor = 'pointer';
                     },
@@ -174,7 +174,8 @@ function renderMyChart() {
                     labels: {
                         usePointStyle: true,
                         pointStyle: 'circle',
-                        font: { size: 14, weight: 'bold' }
+                        padding: props.isMobile ? 12 : 24,
+                        font: { size: props.isMobile ? 11 : 14, weight: 'bold' }
                     }
                 },
                 tooltip: {
@@ -276,7 +277,7 @@ function renderMyChart() {
             <button @click="toggleChartFullscreen" class="mt-8 px-6 py-2 border border-gray-600 rounded-lg text-gray-400 hover:text-white">Close</button>
         </div>
         
-         <div style="display:inline-block;background:rgba(255,255,255,0.04);border:1px solid var(--border-subtle);border-radius:8px;padding:6px 14px;font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+         <div class="chart__tip">
             Tip: Click on the labels below to toggle strategies
         </div>
 
@@ -287,6 +288,31 @@ function renderMyChart() {
 </template>
 
 <style scoped>
+.chart-wrapper {
+    transition: height 0.3s ease;
+}
+
+.chart__tip {
+    display: inline-block;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+    .chart__tip {
+        display: block;
+        text-align: center;
+        font-size: 10px;
+        padding: 5px 10px;
+        margin-bottom: 12px;
+    }
+}
+
 .chart-fullscreen {
     position: fixed !important;
     top: 0;
@@ -303,7 +329,7 @@ function renderMyChart() {
 }
 
 .chart-fullscreen h3, 
-.chart-fullscreen .inline-block {
+.chart-fullscreen .chart__tip {
     display: none;
 }
 

@@ -163,11 +163,20 @@ function formatNumber(num, decimals = 0) {
 .text-red { color: #f87171; }
 
 @media (max-width: 900px) {
+  .unified-stats { padding: 20px; gap: 24px; }
   .metric-row { grid-template-columns: 1fr; gap: 16px; padding: 20px; }
   .metric-row__comparison { gap: 12px; }
   .comp-val { font-size: 18px; min-width: 50px; }
   .comp-pill { font-size: 16px; padding: 8px 16px; min-width: 110px; }
   .roi-val { font-size: 24px; }
   .comp-bar-wrap { display: none; }
+}
+
+@media (max-width: 600px) {
+  .unified-stats__header { flex-direction: column; gap: 16px; }
+  .unified-stats__legend { gap: 24px; margin-top: 0; }
+  .legend-item { font-size: 14px; gap: 8px; }
+  .dot { width: 12px; height: 12px; }
+  .unified-stats__subtitle { display: none; }
 }
 </style>

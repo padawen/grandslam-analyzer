@@ -2,26 +2,15 @@
   <div class="matchlist glass-card animate-fade-in">
     <!-- Header -->
     <div class="matchlist__header">
-      <div class="matchlist__title-row">
-        <h3 class="matchlist__title">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          Matches
-        </h3>
-        <span class="matchlist__count">{{ matches.length }}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div v-if="isExpanded" class="flex gap-2">
-          <div class="matchlist__legend">
-            <span style="color: #4ade80;">●</span> Winner
-          </div>
-          <div class="matchlist__legend">
-            <span style="color: #f87171;">●</span> Loser
-          </div>
-          <div class="matchlist__legend">
-            <span class="matchlist__legend-star">★</span> Underdog
-          </div>
+      <div class="matchlist__header-main">
+        <div class="matchlist__title-row">
+          <h3 class="matchlist__title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Matches
+          </h3>
+          <span class="matchlist__count">{{ matches.length }}</span>
         </div>
         <button @click="isExpanded = !isExpanded" class="matchlist__toggle">
           {{ isExpanded ? 'Hide' : 'Show All' }}
@@ -29,6 +18,18 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </button>
+      </div>
+
+      <div v-if="isExpanded" class="matchlist__legend-wrap">
+        <div class="matchlist__legend">
+          <span style="color: #4ade80;">●</span> Winner
+        </div>
+        <div class="matchlist__legend">
+          <span style="color: #f87171;">●</span> Loser
+        </div>
+        <div class="matchlist__legend">
+          <span class="matchlist__legend-star">★</span> Underdog
+        </div>
       </div>
     </div>
 
@@ -150,31 +151,39 @@ function getPlayerColor(match, player) {
 <style scoped>
 .matchlist { padding: 24px; }
 
-.matchlist__header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+.matchlist__header { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.matchlist__header-main { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 12px; }
 .matchlist__title-row { display: flex; align-items: center; gap: 10px; }
-.matchlist__title { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: var(--text-primary); }
-.matchlist__title svg { width: 20px; height: 20px; color: var(--sky); flex-shrink: 0; }
+.matchlist__title { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: var(--text-primary); margin: 0; }
+.matchlist__title svg { width: 22px; height: 22px; color: var(--sky); flex-shrink: 0; }
 .matchlist__count {
   background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle);
   border-radius: 100px; padding: 2px 10px;
   font-size: 12px; font-weight: 600; color: var(--text-muted);
 }
+.matchlist__legend-wrap { display: flex; gap: 8px; flex-wrap: wrap; }
 .matchlist__legend {
-  display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-weight: 600; color: var(--text-muted);
   background: rgba(255,255,255,0.04); border: 1px solid var(--border-subtle);
   border-radius: 6px; padding: 4px 10px;
 }
-.matchlist__legend-star { color: var(--emerald-light); }
+.matchlist__legend-star { color: var(--emerald-light); font-size: 14px; line-height: 1; }
 .matchlist__toggle {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border-radius: 8px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px; border-radius: 10px;
   background: rgba(255,255,255,0.05); border: 1px solid var(--border-default);
-  color: var(--text-secondary); font-size: 13px; font-weight: 600;
-  transition: all 0.15s;
+  color: var(--text-secondary); font-size: 13px; font-weight: 700;
+  transition: all 0.2s; white-space: nowrap;
 }
-.matchlist__toggle:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
-.matchlist__toggle svg { width: 14px; height: 14px; }
+.matchlist__toggle:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.matchlist__toggle svg { width: 16px; height: 16px; }
+
+@media (max-width: 600px) {
+  .matchlist { padding: 16px; }
+  .matchlist__legend { font-size: 11px; padding: 3px 8px; }
+  .matchlist__toggle { padding: 6px 12px; font-size: 12px; }
+}
 
 .matchlist__empty { text-align: center; padding: 40px; color: var(--text-muted); font-size: 15px; }
 
