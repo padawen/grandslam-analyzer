@@ -1,0 +1,46 @@
+name: Update Tennis Matches
+
+on:
+  schedule:
+    - cron: "0 19 * * *"  # 21:00 CET / 19:00 UTC
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log execution time
+        run: echo "Workflow started at $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Scraper
+        working-directory: ./backend
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          TOURNAMENT_URLS_JSON: ${{ secrets.TOURNAMENT_URLS_JSON }}
+        run: |
+          python3 -m scraper australian_open
+          python3 -m scraper australian_open_wta
+          python3 -m scraper miami_atp
+          python3 -m scraper miami_wta
+          python3 -m scraper indian_wells_atp
+          python3 -m scraper indian_wells_wta
+          python3 -m scraper monte_carlo_atp
+          python3 -m scraper dubai_wta
+          python3 -m scraper doha_wta
