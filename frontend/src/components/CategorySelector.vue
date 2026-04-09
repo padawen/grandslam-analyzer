@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col items-center gap-2">
     <span class="section-label">Tournament Type</span>
-    <div class="cat-selector">
+    <div class="flex gap-2 flex-wrap justify-center">
       <button
         v-for="cat in categories"
         :key="cat.value"
         @click="emit('select-category', cat.value)"
-        :class="['cat-btn', currentCategory === cat.value ? `cat-btn--active cat-btn--active-${cat.value}` : '']"
+        :class="['pill-btn', 'pill-btn--large', cat.value === 'grand_slam' ? 'pill-btn--amber' : 'pill-btn--indigo', currentCategory === cat.value ? 'active' : '']"
       >
         {{ cat.label }}
       </button>
@@ -37,50 +37,4 @@ const categories = computed(() => {
 </script>
 
 <style scoped>
-.cat-selector {
-  display: flex;
-  gap: 6px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  padding: 5px;
-}
-
-.cat-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 20px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  border: 1px solid transparent;
-  background: transparent;
-  transition: all 0.18s ease;
-  white-space: nowrap;
-}
-.cat-btn:not(.cat-btn--active):hover {
-  color: var(--text-secondary);
-  background: rgba(255,255,255,0.04);
-}
-.cat-btn__icon { font-size: 15px; }
-
-.cat-btn--active { cursor: default; }
-
-.cat-btn--active-grand_slam,
-.cat-btn--active-grand_slam:hover {
-  background: rgba(212, 136, 10, 0.10) !important;
-  border-color: rgba(212, 136, 10, 0.28) !important;
-  color: var(--amber-light) !important;
-}
-
-.cat-btn--active-masters,
-.cat-btn--active-masters:hover {
-  background: rgba(34, 160, 107, 0.10) !important;
-  border-color: rgba(34, 160, 107, 0.28) !important;
-  color: var(--emerald-bright) !important;
-}
 </style>

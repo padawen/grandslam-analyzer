@@ -14,12 +14,32 @@ import ErrorState from './components/ErrorState.vue';
 import WelcomeModal from './components/WelcomeModal.vue';
 import MatchList from './components/MatchList.vue';
 
+const allCategoryTournaments = ref([]);
+
 const matchesData = ref([]);
 const allMatchesData = ref([]); 
 const availableYears = ref([]);
-const availableDivisions = ref([]);
+const availableDivisions = computed(() => {
+    const tourneys = allCategoryTournaments.value || [];
+    const divisions = [...new Set(tourneys.map(t => t.division))];
+    return divisions.sort((a, b) => (a === 'ATP' ? -1 : 1));
+});
+const availableTournaments = computed(() => {
+    const tourneys = allCategoryTournaments.value || [];
+    const filtered = tourneys.filter(t => t.division === currentDivision.value);
+    
+    const unique = [];
+    const seen = new Set();
+    for (const t of filtered) {
+        const clean = getCleanName(t.name);
+        if (!seen.has(clean)) {
+            seen.add(clean);
+            unique.push({ ...t, name: clean });
+        }
+    }
+    return unique;
+});
 const availableCategories = ref(['grand_slam']);
-const availableTournaments = ref([]);
 const currentYear = ref(null);
 const currentDivision = ref('ATP');
 const currentCategory = ref('grand_slam');
@@ -68,7 +88,6 @@ async function loadYears() {
         if (availableYears.value.length > 0) {
             const latest = availableYears.value[0];
             await loadCategories(latest);
-            await loadDivisions(latest, currentCategory.value);
             loadYear(latest, currentDivision.value, currentCategory.value);
         } else {
             loadYear(2026, 'ATP', 'grand_slam');
@@ -102,50 +121,46 @@ function getCleanName(name) {
     return clean.toUpperCase();
 }
 
-async function loadDivisions(year, category, cleanName = null) {
-    try {
-        if (!cleanName) {
-            availableDivisions.value = ['ATP'];
-            currentDivision.value = 'ATP';
-            return;
+async function handleCategoryChange(category) {
+    currentCategory.value = category;
+    await loadTournaments(currentYear.value, category);
+    
+    // After loading tournaments for the new category, check divisions
+    if (availableDivisions.value.length > 0) {
+        if (!availableDivisions.value.includes(currentDivision.value)) {
+            currentDivision.value = availableDivisions.value[0];
         }
-
-        // Resolve divisions locally from pre-fetched tournament metadata
-        const matches = (window._allCategoryTournaments || []).filter(t => getCleanName(t.name) === cleanName);
-        const divisions = [...new Set(matches.map(m => m.division))];
-        
-        // ATP preferred order
-        divisions.sort((a, b) => (a === 'ATP' ? -1 : 1));
-        availableDivisions.value = divisions;
-        
-        if (availableDivisions.value.length > 0) {
-            if (!currentDivision.value || !availableDivisions.value.includes(currentDivision.value)) {
-                currentDivision.value = availableDivisions.value.includes('ATP') ? 'ATP' : availableDivisions.value[0];
-            }
-        }
-    } catch (err) {
-        console.error("Failed to resolve divisions locally:", err);
-        availableDivisions.value = ['ATP'];
-        currentDivision.value = 'ATP';
     }
+    
+    // Auto-select first available tournament for the current division
+    if (availableTournaments.value.length > 0) {
+        const firstT = availableTournaments.value[0];
+        await loadYear(currentYear.value, currentDivision.value, category, firstT.name, true);
+    } else {
+        await loadYear(currentYear.value, currentDivision.value, category, null, true);
+    }
+}
+
+async function handleDivisionChange(division) {
+    currentDivision.value = division;
+    if (availableTournaments.value.length > 0) {
+        const firstT = availableTournaments.value[0];
+        await loadYear(currentYear.value, division, currentCategory.value, firstT.name, true);
+    } else {
+        await loadYear(currentYear.value, division, currentCategory.value, null, true);
+    }
+}
+
+function toggleSingleSelect() {
+    isSingleSelect.value = !isSingleSelect.value;
+    selectedRounds.value = new Set();
+    filterMatches();
 }
 
 async function loadTournaments(year, category) {
     try {
         const response = await api.get(`/tournaments_list?year=${year}&category=${category}`);
-        const allTours = response.data;
-        window._allCategoryTournaments = allTours;
-
-        const unique = [];
-        const seen = new Set();
-        for (const t of allTours) {
-            const clean = getCleanName(t.name);
-            if (!seen.has(clean)) {
-                seen.add(clean);
-                unique.push({ ...t, name: clean }); // Use unified clean name for UI
-            }
-        }
-        availableTournaments.value = unique;
+        allCategoryTournaments.value = response.data;
 
         if (availableTournaments.value.length > 0) {
             if (!currentTournamentName.value) {
@@ -162,15 +177,19 @@ async function loadTournaments(year, category) {
         }
     } catch (err) {
         console.error("Failed to load tournaments:", err);
-        availableTournaments.value = [];
+        allCategoryTournaments.value = [];
         currentTournamentName.value = "";
         currentTournamentId.value = null;
     }
 }
 
-async function loadYear(year, division, category = currentCategory.value, tournamentNameAttr = null) {
+async function loadYear(year, division, category = currentCategory.value, tournamentNameAttr = null, forceResetRounds = false) {
+  if (forceResetRounds) {
+    selectedRounds.value = new Set();
+  }
+
   const isSameTournament = !tournamentNameAttr || tournamentNameAttr === currentTournamentName.value;
-  if (year === currentYear.value && division === currentDivision.value && category === currentCategory.value && isSameTournament) {
+  if (year === currentYear.value && division === currentDivision.value && category === currentCategory.value && isSameTournament && !forceResetRounds) {
     if (allMatchesData.value.length > 0) return;
   }
 
@@ -181,23 +200,22 @@ async function loadYear(year, division, category = currentCategory.value, tourna
   
   loading.value = true;
   error.value = null;
-  selectedRounds.value.clear();
-
-  await Promise.all([
-    loadCategories(year),
-    loadTournaments(year, category)
-  ]);
   
-  await loadDivisions(year, category, currentTournamentName.value);
+  // If we came from a high-level filter change OR it's a new tournament, reset rounds
+  if (tournamentNameAttr !== currentTournamentName.value || forceResetRounds) {
+    selectedRounds.value = new Set();
+  }
 
-  const matching = (window._allCategoryTournaments || []).find(t => 
+  await loadTournaments(year, category);
+
+  const matching = (allCategoryTournaments.value || []).find(t => 
     getCleanName(t.name) === currentTournamentName.value && t.division === currentDivision.value
   );
   if (matching) {
     currentTournamentId.value = matching.id;
-  } else if (window._allCategoryTournaments?.length > 0) {
-    const firstForName = window._allCategoryTournaments.find(t => getCleanName(t.name) === currentTournamentName.value);
-    currentTournamentId.value = firstForName ? firstForName.id : window._allCategoryTournaments[0].id;
+  } else if (allCategoryTournaments.value?.length > 0) {
+    const firstForName = allCategoryTournaments.value.find(t => getCleanName(t.name) === currentTournamentName.value);
+    currentTournamentId.value = firstForName ? firstForName.id : allCategoryTournaments.value[0].id;
   }
 
   const cacheKey = `${year}-${currentDivision.value}-${category}-${currentTournamentId.value}`;
@@ -357,21 +375,22 @@ const availableRounds = computed(() => {
 
 function toggleRound(round) {
     if (round === 'all') {
-        selectedRounds.value.clear();
+        selectedRounds.value = new Set();
     } else {
         if (isSingleSelect.value) {
             if (selectedRounds.value.has(round)) {
                 selectedRounds.value.clear(); 
             } else {
-                selectedRounds.value.clear();
-                selectedRounds.value.add(round);
+                selectedRounds.value = new Set([round]);
             }
         } else {
-            if (selectedRounds.value.has(round)) {
-                selectedRounds.value.delete(round);
+            const next = new Set(selectedRounds.value);
+            if (next.has(round)) {
+                next.delete(round);
             } else {
-                selectedRounds.value.add(round);
+                next.add(round);
             }
+            selectedRounds.value = next;
         }
     }
     filterMatches();
@@ -478,30 +497,29 @@ watch(stake, () => {
             v-if="availableCategories.length > 1"
             :availableCategories="availableCategories"
             :currentCategory="currentCategory"
-            @select-category="(cat) => loadYear(currentYear, currentDivision, cat)"
+            @select-category="handleCategoryChange"
           />
         </div>
 
         <div class="controls-divider"></div>
 
-        <!-- 2. Tournaments within the selected Season and Category -->
-        <TournamentSelector
-          :availableTournaments="availableTournaments"
-          :currentTournamentName="currentTournamentName"
-          @select-tournament="(tName) => loadYear(currentYear, currentDivision, currentCategory, tName)"
-        />
-
-        <div class="controls-divider"></div>
-
-        <!-- 3. Division -->
         <div class="controls-row">
           <DivisionSelector
             v-if="availableDivisions.length > 0"
             :availableDivisions="availableDivisions"
             :currentDivision="currentDivision"
-            @select-division="(division) => loadYear(currentYear, division, currentCategory)"
+            @select-division="handleDivisionChange"
           />
         </div>
+
+        <div class="controls-divider"></div>
+
+        <TournamentSelector
+          :availableTournaments="availableTournaments"
+          :currentTournamentName="currentTournamentName"
+          :currentDivision="currentDivision"
+          @select-tournament="(tName) => loadYear(currentYear, currentDivision, currentCategory, tName)"
+        />
 
         <div class="controls-divider"></div>
 
@@ -510,7 +528,7 @@ watch(stake, () => {
           :selectedRounds="selectedRounds"
           :isSingleSelect="isSingleSelect"
           @toggle-round="toggleRound"
-          @toggle-mode="isSingleSelect = !isSingleSelect"
+          @toggle-mode="toggleSingleSelect"
         />
 
         <div class="controls-divider"></div>

@@ -6,7 +6,7 @@
         v-for="tournament in availableTournaments"
         :key="tournament.name"
         @click="emit('select-tournament', tournament.name)"
-        :class="['pill-btn', currentTournamentName === tournament.name ? 'active' : '']"
+        :class="['pill-btn', currentDivision === 'WTA' ? 'pill-btn--pink' : 'pill-btn--sky', currentTournamentName === tournament.name ? 'active' : '']"
         :title="tournament.surface"
       >
         {{ formatName(tournament.name) }} {{ tournament.year }}
@@ -18,7 +18,8 @@
 <script setup>
 defineProps({
   availableTournaments: { type: Array, required: true },
-  currentTournamentName: { type: String, default: "" }
+  currentTournamentName: { type: String, default: "" },
+  currentDivision: { type: String, default: 'ATP' }
 });
 const emit = defineEmits(['select-tournament']);
 

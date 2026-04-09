@@ -15,19 +15,11 @@ function isActive(round, set) {
   <div v-if="availableRounds.length > 0" class="flex flex-col items-center gap-2 w-full animate-slide-down">
     <div class="flex items-center gap-4">
       <span class="section-label">Filter by Round</span>
-      <button 
-        @click="emit('toggle-mode', !isSingleSelect)" 
-        :class="['mode-toggle', isSingleSelect ? 'mode-toggle--active' : '']"
-        title="Toggle Single/Multi selection"
-      >
-        <div class="mode-toggle__dot"></div>
-        <span>Single Select</span>
-      </button>
     </div>
     <div class="flex flex-wrap justify-center gap-2">
       <button
         @click="emit('toggle-round', 'all')"
-        :class="['pill-btn', selectedRounds.size === 0 ? 'active' : '']"
+        :class="['pill-btn', 'pill-btn--emerald', selectedRounds.size === 0 ? 'active' : '']"
       >
         All
       </button>
@@ -35,9 +27,19 @@ function isActive(round, set) {
         v-for="round in availableRounds"
         :key="round"
         @click="emit('toggle-round', round)"
-        :class="['pill-btn', isActive(round, selectedRounds) ? 'active' : '']"
+        :class="['pill-btn', 'pill-btn--emerald', isActive(round, selectedRounds) ? 'active' : '']"
       >
         {{ round }}
+      </button>
+    </div>
+
+    <div class="mt-4">
+       <button 
+        @click="emit('toggle-mode', !isSingleSelect)" 
+        :class="['mode-toggle', isSingleSelect ? 'mode-toggle--active' : '']"
+      >
+        <div class="mode-toggle__dot"></div>
+        <span>Single Select Mode</span>
       </button>
     </div>
   </div>

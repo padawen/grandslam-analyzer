@@ -31,6 +31,14 @@
   --text-secondary: #8b9ab0;
   --text-muted: #4a566a;
 
+  --wta-pink: #f472b6;
+  --wta-pink-light: #f9a8d4;
+  --wta-pink-dim: rgba(244, 114, 182, 0.15);
+
+  --masters-indigo: #818cf8;
+  --masters-indigo-light: #a5b4fc;
+  --masters-indigo-dim: rgba(129, 140, 248, 0.15);
+
   --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -116,21 +124,75 @@ input[type="reset"] {
   color: var(--text-secondary);
   letter-spacing: 0.02em;
 }
+.pill-btn--large {
+  padding: 12px 28px;
+  font-size: 15px;
+  border-radius: 100px;
+}
 .pill-btn:hover {
-  border-color: var(--emerald-light);
-  color: var(--emerald-bright);
-  background: var(--emerald-dim);
+  border-color: var(--sky);
+  color: #7dd3fc;
+  background: var(--sky-dim);
 }
 .pill-btn.active {
-  background: rgba(34, 160, 107, 0.14);
-  border-color: var(--emerald-light);
-  color: var(--emerald-bright);
+  background: rgba(56, 189, 248, 0.14);
+  border-color: #38bdf8;
+  color: #7dd3fc;
   cursor: default;
 }
 .pill-btn.active:hover {
-  background: rgba(34, 160, 107, 0.14) !important;
+  background: rgba(56, 189, 248, 0.14);
+  border-color: #38bdf8;
+  color: #7dd3fc;
+}
+
+/* Colored Variants */
+.pill-btn--emerald.active {
+  background: var(--emerald-dim) !important;
   border-color: var(--emerald-light) !important;
   color: var(--emerald-bright) !important;
+}
+.pill-btn--emerald:hover {
+  border-color: var(--emerald-light) !important;
+  color: var(--emerald-bright) !important;
+  background: var(--emerald-dim) !important;
+}
+.pill-btn--amber.active {
+  background: var(--amber-dim) !important;
+  border-color: var(--amber-light) !important;
+  color: var(--amber-light) !important;
+}
+.pill-btn--amber:hover {
+  border-color: var(--amber-light) !important;
+  color: var(--amber-light) !important;
+  background: var(--amber-dim) !important;
+}
+.pill-btn--sky.active {
+  background: var(--sky-dim) !important;
+  border-color: var(--sky) !important;
+  color: #7dd3fc !important;
+}
+.pill-btn--rose.active,
+.pill-btn--pink.active {
+  background: var(--wta-pink-dim) !important;
+  border-color: var(--wta-pink) !important;
+  color: var(--wta-pink-light) !important;
+}
+.pill-btn--rose:hover,
+.pill-btn--pink:hover {
+  border-color: var(--wta-pink);
+  color: var(--wta-pink-light);
+  background: var(--wta-pink-dim);
+}
+.pill-btn--indigo.active {
+  background: var(--masters-indigo-dim) !important;
+  border-color: var(--masters-indigo) !important;
+  color: var(--masters-indigo-light) !important;
+}
+.pill-btn--indigo:hover {
+  border-color: var(--masters-indigo);
+  color: var(--masters-indigo-light);
+  background: var(--masters-indigo-dim);
 }
 
 .section-label {
